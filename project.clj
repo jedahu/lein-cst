@@ -1,4 +1,4 @@
-(defproject org.clojars.jedahu/lein-clojurescript "1.1.1"
+(defproject org.clojars.jedahu/lein-clojurescript "1.1.2-SNAPSHOT"
   :description "leiningen plugin for clojurescript"
   :dependencies [[org.clojure/clojure "1.3.0"]
                  [org.clojure/clojurescript "0.0-971"]

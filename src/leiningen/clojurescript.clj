@@ -18,13 +18,26 @@
 
 (defn- maybe-test [opts args]
   (when-let [cmd (and (some #{"test"} args)
-                    (:test-cmd opts))]
-    `(do
-       (println (str "Running `" ~(clojure.string/join " " cmd) "`."))
-       (let [proc# (conch.core/proc ~@cmd)]
-         (future (conch.core/stream-to-out proc# :out))
-         (future (conch.core/stream-to-out proc# :err))
-         (conch.core/exit-code proc#)))))
+                      (:test-cmd opts))]
+    (if (string? cmd)
+      `(let [env# (cljs.repl.rhino/repl-env)
+             path# ~(:output-to opts)]
+         (with-open [r# (io/reader path#)]
+           (cljs.repl.rhino/rhino-eval env# path# 1 r#))
+         (let [res# (cljs.repl.rhino/rhino-eval env# nil 1 ~cmd)]
+           (if (= :success (:status res#))
+             (int (Double/parseDouble (:value res#)))
+             (do
+               (println "Unhandled JS exception:")
+               (println (:value res#))
+               (println (:stacktrace res#))
+               1))))
+      `(do
+         (println (str "Running `" ~(clojure.string/join " " cmd) "`."))
+         (let [proc# (conch.core/proc ~@cmd)]
+           (future (conch.core/stream-to-out proc# :out))
+           (future (conch.core/stream-to-out proc# :err))
+           (conch.core/exit-code proc#))))))
 
 (defn- build-once [source-dir opts args cljsfiles]
   `(try
@@ -73,6 +86,7 @@
       '(require 'cljs.closure
                 'clj-stacktrace.repl
                 'conch.core
+                'cljs.repl.rhino
                 'clojure.string
                 'watcher))))
 
@@ -98,7 +112,12 @@ examples: lein clojurescript
                          :optimizations :advanced}'"
   [project & args]
   (let [outputfile (str (or (:name project) (:group project)) ".js")
-        opts (apply merge (:cljs project)
+        opts (apply merge
+                    {:output-dir "out"
+                     :output-to "all.js"
+                     :optimizations :whitespace
+                     :pretty-print true}
+                    (:cljs project)
                     (map read-string (filter clojurescript-arg? args)))
         src-dir (or (:src-dir opts) "src")
         test-dir (or (:test-dir opts) "test")
