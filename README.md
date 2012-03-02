@@ -79,7 +79,7 @@ Additional plugin-specific project.clj settings include:
  :src-dir "cljs/src/dir"}
 ```
 
-`:test-cmd` must be in a format useable by `clojure.java.shell/sh`. E.g.
+`:test-cmd` must be in a format useable by `conch.core/proc`. E.g.
 ```
 :test-cmd ["phantomjs" "tests.js"]
 ```
