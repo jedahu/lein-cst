@@ -98,7 +98,12 @@ examples: lein clojurescript
                          :optimizations :advanced}'"
   [project & args]
   (let [outputfile (str (or (:name project) (:group project)) ".js")
-        opts (apply merge (:cljs project)
+        opts (apply merge
+                    {:output-dir "out"
+                     :output-to "all.js"
+                     :optimizations :whitespace
+                     :pretty-print true}
+                    (:cljs project)
                     (map read-string (filter clojurescript-arg? args)))
         src-dir (or (:src-dir opts) "src")
         test-dir (or (:test-dir opts) "test")
