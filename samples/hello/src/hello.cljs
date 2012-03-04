@@ -1,4 +1,6 @@
-(ns hello)
+(ns hello
+  (:use
+    [text.util :only (upcase)]))
 
 (defn ^{:export greet} greet [n]
-  (str "Hello " n))
+  (upcase (str "hello " n)))

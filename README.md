@@ -79,8 +79,14 @@ Additional plugin-specific project.clj settings include:
  :src-dir "cljs/src/dir"}
 ```
 
-`:test-cmd` must be in a format useable by `conch.core/proc`. E.g.
+`:test-cmd` must be a string or a vector of strings:
+
+   * string: a javascript snippet returning the number of tests failed.
+   * vector: a shell command to be executed by `conch.core/proc`.
+
+E.g.:
 ```
+:test-cmd "test.ns._run_tests()"
 :test-cmd ["phantomjs" "tests.js"]
 ```
 

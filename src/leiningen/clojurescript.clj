@@ -133,12 +133,12 @@ examples: lein clojurescript
     (when-not (some #{"clean"} args)
       (if-let [cljsfiles (seq (filter (comp clojurescript-file? getName)
                                       (apply concat (map #(file-seq (io/file %)) source-dirs))))]
-        (do
-          (build project source-dirs opts args cljsfiles)
+        (let [ret (build project source-dirs opts args cljsfiles)]
           (when-let [[x y] (and (:optimizations opts)
                                 (:wrap-output opts))]
             (spit (:output-to opts)
-                  (str x (slurp (:output-to opts)) y))))
+                  (str x (slurp (:output-to opts)) y)))
+          ret)
         (do
           (println "No cljs files found.")
           1)))))
