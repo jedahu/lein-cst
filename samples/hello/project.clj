@@ -1,7 +1,7 @@
 (defproject
   hello "0.1.0-SNAPSHOT"
   :description "helloworld clojurescript"
-  :dev-dependencies [[lein-cljsc "0.1.0-SNAPSHOT"]]
+  :dev-dependencies [[lein-cljs-tools "0.1.0-SNAPSHOT"]]
   :extra-classpath-dirs ["src"]
   :cljs
   {:output-to "resources/public/js/hello.js"

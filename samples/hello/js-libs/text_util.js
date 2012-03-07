@@ -1,5 +1,5 @@
 goog.provide('text.util');
 
-text.case.upcase = function(str) {
+text.util.upcase = function(str) {
   return str.toUpperCase();
 };
