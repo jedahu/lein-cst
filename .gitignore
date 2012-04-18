@@ -1,0 +1,7 @@
+.*
+*.jar
+pom.xml
+lib/
+classes/
+resources/
+target/
