@@ -85,7 +85,7 @@
                      (for [sym (conj suites cljs-fn)
                            :let [ns-sym (symbol (namespace sym))]]
                        [ns-sym :as (gensym)])))
-        `(apply ~cljs-fn ~suites ~runner-opts)))))
+        (list* cljs-fn suites (apply concat runner-opts))))))
 
 
 (defn run-build
