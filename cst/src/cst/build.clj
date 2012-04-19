@@ -22,7 +22,7 @@
           (conch/exit-code p)))
 
       (symbol? proc)
-      (let [res ((resolve proc) build)]
+      (let [res ((resolve proc) opts)]
         (if (integer? res) res 1))
 
       (= :rhino proc)
