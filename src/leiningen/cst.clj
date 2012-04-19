@@ -3,7 +3,9 @@
             [clojure.java.io :as io]
             [leiningen.compile :as lc]
             [fs.core :as fs])
-  (:import java.util.Date))
+  (:import
+    [java.util Date]
+    [java.io File]))
 
 (defn add-cst-dep
   [project]
@@ -33,9 +35,7 @@
       nil
       nil
       (list* 'require ''cst.build
-            (when-let [p (and test? (:proc
-                                      ((:runner opts)
-                                         (:runners opts))))]
+            (when-let [p (and test? (:proc (:runner opts)))]
               (when (symbol? p)
                 [`(quote ~(symbol (namespace p)))]))))))
 
@@ -89,6 +89,32 @@
     :server :default
     :port 9000
     :http 8000})
+
+(defn build-opts
+  [opts test?]
+  (let [bopts ((:build opts) (:builds opts))
+        src-dir (or (:src-dir bopts) (:src-dir opts))
+        test-dir (:test-dir opts)
+        main-dir (if test? test-dir src-dir)
+        bopts1 (assoc bopts
+                      :src-dir src-dir
+                      :test-dir test-dir
+                      :main-dir main-dir)]
+    (if-let [path (:output-to bopts1)]
+      (if test?
+        (assoc bopts1
+               :output-to (str (.getParent (File. path))
+                               "/test.js"))
+        bopts1)
+      (assoc bopts1
+             :output-to (str
+                          (File.
+                            (:output-dir bopts1)
+                            (if test? "/test.js" "/main.js")))))))
+
+(defn test-opts
+  [opts]
+  ((:runner opts) (:runners opts)))
 
 (defn cst
   "Tools for clojurescript projects. Default action is to compile.
@@ -156,15 +182,16 @@ browser repl and server
   [project & args]
   (let [outputfile (str (or (:name project) (:group project)) ".js")
         [args opts] (split-with #(not= \: (first %)) args)
-        opts (apply merge
-                    default-opts
-                    (:cst project)
-                    (read-string (str "{" (string/join " " opts) "}")))
-        src-dir (:src-dir opts)
-        test-dir (:test-dir opts)
+        opts- (apply merge
+                     default-opts
+                     (:cst project)
+                     (read-string (str "{" (string/join " " opts) "}")))
         arg-set (set args)
         test? (arg-set "test")
         watch? (arg-set "watch")
+        bopts (build-opts opts- test?)
+        topts (test-opts opts-)
+        opts (assoc opts- :build bopts :runner topts)
         starttime (.getTime (Date.))]
     (when (some #{"clean" "fresh"} args)
       (println (str "Removing '" (:output-dir opts)

@@ -6,36 +6,7 @@
     [cljs.repl.rhino :as rhino]
     [clojure.string :as string]
     [watcher :as w]
-    [clojure.java.io :as io]
-    [fs.core :as fs])
-  (:import
-    [java.io File]))
-
-(defn test-opts
-  [opts]
-  ((:runner opts) (:runners opts)))
-
-(defn build-opts
-  [opts test?]
-  (let [bopts ((:build opts) (:builds opts))
-        src-dir (or (:src-dir bopts) (:src-dir opts))
-        test-dir (:test-dir opts)
-        main-dir (if test? test-dir src-dir)
-        bopts1 (assoc bopts
-                      :src-dir src-dir
-                      :test-dir test-dir
-                      :main-dir main-dir)]
-    (if-let [path (:output-to bopts1)]
-      (if test?
-        (assoc bopts1
-               :output-to (str (.getParent (File. path))
-                               "/test.js"))
-        bopts1)
-      (assoc bopts1
-             :output-to (str
-                          (File.
-                            (:output-dir bopts1)
-                            (if test? "/test.js" "/main.js")))))))
+    [clojure.java.io :as io]))
 
 (defn run-tests
   [{:keys [build runner] :as opts}]
@@ -133,11 +104,6 @@
 
 (defn build-cljs
   [opts test? watch?]
-  (let [bopts (build-opts opts test?)
-        topts (and test? (test-opts opts))
-        opts (assoc opts
-                    :build bopts
-                    :runner topts)]
-    (if watch?
-      (build-loop opts)
-      (build-once opts))))
+  (if watch?
+    (build-loop opts)
+    (build-once opts)))
