@@ -194,10 +194,10 @@ browser repl and server
         opts (assoc opts- :build bopts :runner topts)
         starttime (.getTime (Date.))]
     (when (some #{"clean" "fresh"} args)
-      (println (str "Removing '" (:output-dir opts)
-                  "' and '" (:output-to opts) "' ..."))
-      (fs/delete (:output-to opts))
-      (fs/delete-dir (:output-dir opts)))
+      (println (str "Removing '" (:output-dir bopts)
+                  "' and '" (:output-to bopts) "'.."))
+      (fs/delete (:output-to bopts))
+      (fs/delete-dir (:output-dir bopts)))
     (when-not (some #{"clean"} args)
       (cond
         (some #{"repl"} args)
