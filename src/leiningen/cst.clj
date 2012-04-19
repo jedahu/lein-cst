@@ -43,12 +43,9 @@
   [project opts]
   (lc/eval-in-project
     (-> project add-cst-dep (cp-add-test-dir true))
-    `(cst.repl/start-browser-repl
-       ~(:port opts)
-       ~(:output-dir opts)
-       ~(str (:output-dir opts) "/cst-repl.js"))
+    `(cst.sbrepl/start-sbrepl '~opts)
     nil nil
-    '(require 'cst.repl)))
+    '(require 'cst.sbrepl)))
 
 (defn- run-brepl
   [project opts]
@@ -57,7 +54,7 @@
     `(cljs.repl/repl
        (cljs.repl.browser/repl-env
          :port ~(:port opts)
-         :working-dir ~(:output-dir opts)))
+         :working-dir ~(:repl-dir opts)))
     nil nil
     '(require 'cljs.repl 'cljs.repl.browser)))
 
@@ -65,7 +62,8 @@
   [project opts]
   (lc/eval-in-project
     (cp-add-test-dir project true)
-    '(cljs.repl/repl (cljs.repl.rhino/repl-env))
+    '(cljs.repl/repl (assoc (cljs.repl.rhino/repl-env)
+                            :working-dir ~(:repl-dir opts)))
     nil nil
     '(require 'cljs.repl 'cljs.repl.rhino)))
 
