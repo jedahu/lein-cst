@@ -7,7 +7,9 @@
     [clojure.string :as string]
     [watcher :as w]
     [clojure.java.io :as io]
-    [fs.core :as fs]))
+    [fs.core :as fs])
+  (:import
+    [java.io File]))
 
 (defn test-opts
   [opts]
@@ -26,13 +28,14 @@
     (if-let [path (:output-to bopts1)]
       (if test?
         (assoc bopts1
-               :output-to (str (fs/file (fs/parent path) "test.js")))
+               :output-to (str (.getParent (File. path))
+                               "/test.js"))
         bopts1)
       (assoc bopts1
              :output-to (str
-                          (fs/file
+                          (File.
                             (:output-dir bopts1)
-                            (if test? "test.js" "main.js")))))))
+                            (if test? "/test.js" "/main.js")))))))
 
 (defn run-tests
   [{:keys [build runner] :as opts}]

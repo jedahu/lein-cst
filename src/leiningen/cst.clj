@@ -32,7 +32,12 @@
       `(cst.build/build-cljs '~opts ~test? ~watch?)
       nil
       nil
-      '(require 'cst.build))))
+      (list* 'require ''cst.build
+            (when-let [p (and test? (:proc
+                                      ((:runner opts)
+                                         (:runners opts))))]
+              (when (symbol? p)
+                [`(quote ~(symbol (namespace p)))]))))))
 
 (defn- run-sbrepl
   [project opts]
@@ -80,7 +85,7 @@
                :proc :rhino}}
     :runner :default
     :servers
-    {:default menodora.test.server/serve-cljs}
+    {:default menodora.server/serve-cljs}
     :server :default
     :port 9000
     :http 8000})
