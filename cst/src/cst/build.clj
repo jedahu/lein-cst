@@ -22,7 +22,8 @@
           (conch/exit-code p)))
 
       (symbol? proc)
-      ((resolve proc) build)
+      (let [res ((resolve proc) build)]
+        (if (integer? res) res 1))
 
       (= :rhino proc)
       (let [env (rhino/repl-env)
