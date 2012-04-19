@@ -150,6 +150,7 @@ testing
     :runner the key to a test runner description
     :suites a vector of test suites
     :opts   a map of options for the clojurescript runner function
+    :http   http port (if using cst.server/serve-cljs)
 
   lein cst fresh test
   lein cst test :suites '[cst.tests/suite1 cst.tests/suite2]'
