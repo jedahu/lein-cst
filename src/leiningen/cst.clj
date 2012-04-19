@@ -73,17 +73,21 @@
     :builds
     {:default {:output-to ".cst-out/default/main.js"
                :output-dir ".cst-out/default"
-               :optimizations nil
+               :optimizations :whitespace
                :pretty-print true
-               :src-dir nil}}
+               :src-dir nil
+               :externs nil
+               :libs nil
+               :foreign-libs nil}}
     :build :default
     :suites []
+    :opts nil
     :runners
     {:default {:cljs menodora.runner.console/run-suites-rhino
                :proc :rhino}}
     :runner :default
     :servers
-    {:default menodora.server/serve-cljs}
+    {:default cst.server/serve-cljs}
     :server :default
     :port 9000
     :http 8000})
