@@ -2,9 +2,7 @@
   (:require
     [cljs.repl :as repl]
     [cljs.repl.browser :as browser]
-    [cljs.closure :as cc])
-  (:use
-    [cst.server :only (serve-brepl*)]))
+    [cljs.closure :as cc]))
 
 (defn start-brepl
   [{:keys [repl-dir port]}]
@@ -33,7 +31,7 @@
 (defn start-sbrepl
   [opts]
   (build-browser-js opts)
-  (let [jetty (serve-brepl* opts)]
+  (let [jetty ((resolve (:server opts)) opts)]
     (start-brepl opts)
     (.stop jetty)
     (System/exit 0)))

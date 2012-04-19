@@ -45,7 +45,7 @@
     (-> project add-cst-dep (cp-add-test-dir true))
     `(cst.sbrepl/start-sbrepl '~opts)
     nil nil
-    '(require 'cst.sbrepl)))
+    `(require 'cst.sbrepl (quote ~(symbol (namespace (:server opts)))))))
 
 (defn- run-brepl
   [project opts]
@@ -189,7 +189,8 @@ browser repl and server
         watch? (arg-set "watch")
         bopts (build-opts opts- test?)
         topts (test-opts opts-)
-        opts (assoc opts- :build bopts :runner topts)
+        servr ((:server opts-) (:servers opts-))
+        opts (assoc opts- :build bopts :runner topts :server servr)
         starttime (.getTime (Date.))]
     (when (some #{"clean" "fresh"} args)
       (println (str "Removing '" (:output-dir bopts)
