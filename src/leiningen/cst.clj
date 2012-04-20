@@ -96,17 +96,12 @@
 (defn build-conf
   [{:keys [src-dir test-dir builds build-defaults]} build-kw test?]
   (let [build (merge build-defaults (get builds build-kw))]
-    (if-let [path (:output-to build)]
-      (if test?
-        (assoc build
-               :output-to (str (.getParent (File. path))
-                               "/test.js"))
-        build)
-      (assoc build
-             :output-to (str
-                          (File.
-                            (:output-dir build)
-                            (if test? "/test.js" "/main.js")))))))
+    (assoc build
+           :output-to (if test?
+                        (str (File. (:output-dir build) "test.js"))
+                        (or (:output-to build)
+                            (str (.getParent
+                                   (File. (:output-dir build) "main.js"))))))))
 
 (defn runner-conf
   [cst-opts runner-kw]
