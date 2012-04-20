@@ -215,6 +215,7 @@ browser repl and server
     (when (some #{"clean" "fresh"} args)
       (println (str "Removing '" (:output-dir build)
                     "' and '" (:output-to build) "'.."))
+      (println)
       (fs/delete (:output-to build))
       (fs/delete-dir (:output-dir build)))
     (when-not (arg-set "clean")
