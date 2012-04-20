@@ -8,26 +8,36 @@
     [watcher :as w]
     [clojure.java.io :as io]))
 
+(def ^:dynamic *verbosity* 0)
+
+(defn vprintln
+  [n & args]
+  (when (<= n *verbosity*)
+    (apply println args)))
+
 (defn run-tests
   [{:keys [build runner] :as opts}]
-  (println "Testing..")
+  (vprintln 1 "Testing..")
   (let [proc (:proc runner)]
     (cond
       (vector? proc)
       (let [cmd (conj proc (:output-to build))]
-        (println (str "Running `" (string/join " " cmd) "`."))
+        (vprintln 2 (str "    `" (string/join " " cmd) "`"))
         (let [p (apply conch/proc cmd)]
           (future (conch/stream-to-out p :out))
           (future (conch/stream-to-out p :err))
           (conch/exit-code p)))
 
       (symbol? proc)
-      (let [res ((resolve proc) opts)]
-        (if (integer? res) res 1))
+      (do
+        (vprintln 2 (str "    " proc))
+        (let [res ((resolve proc) opts)]
+          (if (integer? res) res 1))) 
 
       (= :rhino proc)
       (let [env (rhino/repl-env)
             path (:output-to build)]
+        (vprintln 2 "    rhino")
         (. (:cx env) setOptimizationLevel -1)
         ;; FIX so rhino can test more than single-files
         ;; (when-not (:optimizations build)
@@ -69,12 +79,11 @@
     (write-test-file opts))
   (if runner
     (cc/build ".cst-test.cljs" build)
-    (cc/build (:main-dir build) build)))
+    (cc/build (:src-dir opts) build)))
 
 (defn build-once
   [opts]
   (try
-    (println "Compiling..")
     (run-build opts)
     (System/exit (if (:runner opts) (run-tests opts) 0))
     (catch Throwable e
@@ -84,7 +93,7 @@
 (defn build-loop
   [{:keys [build runner] :as opts}]
   (let [events? (atom true)
-        dirs [(:src-dir build) (:test-dir build)]]
+        dirs [(:src-dir opts) (:test-dir opts)]]
     (future
       (w/with-watch-paths dirs
         (fn [ignored] (reset! events? true))
@@ -92,19 +101,24 @@
     (while true
       (if @events?
         (do
-          (println "Compiling..")
+          (vprintln 1 "Compiling..")
           (try
             (run-build opts)
             (when runner (run-tests opts))
             (catch Throwable e
               (st/pst+ e)))
-          (println "Watching..")
+          (vprintln 1 "Watching..")
           (Thread/sleep 500)
           (reset! events? false))
         (Thread/sleep 100)))))
 
 (defn build-cljs
   [opts test? watch?]
-  (if watch?
-    (build-loop opts)
-    (build-once opts)))
+  (binding [*verbosity* (:verbosity opts)]
+    (vprintln 1 "Compiling..")
+    (vprintln 1 "    :output-dir" (:output-dir (:build opts)))
+    (vprintln 1 "    :output-to " (:output-to (:build opts)))
+    (vprintln 1) 
+    (if watch?
+      (build-loop opts)
+      (build-once opts))))

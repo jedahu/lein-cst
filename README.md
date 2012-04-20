@@ -73,15 +73,14 @@ The default project :cst value...
 ~~~~
 {:src-dir "cljs"
  :test-dir "test"
+ :build-defaults {:externs []
+                  :libs []
+                  :foreign-libs []}
  :builds
  {:default {:output-to ".cst-out/default/main.js"
             :output-dir ".cst-out/default"
             :optimizations :whitespace 
-            :pretty-print true
-            :src-dir nil
-            :externs nil
-            :libs nil
-            :foreign-libs nil}}
+            :pretty-print true}}
  :build :default
  :suites []
  :opts nil

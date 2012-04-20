@@ -1,8 +1,10 @@
 (ns leiningen.cst
-  (:require [clojure.string :as string]
-            [clojure.java.io :as io]
-            [leiningen.compile :as lc]
-            [fs.core :as fs])
+  (:require
+    [clojure.string :as string]
+    [clojure.java.io :as io]
+    [leiningen.compile :as lc]
+    [fs.core :as fs]
+    [clojure.pprint :as pp])
   (:import
     [java.util Date]
     [java.io File]))
@@ -27,7 +29,7 @@
 
 (def getName (memfn getName))
 
-(defn- build [project opts test? watch?]
+(defn- build-src [project opts test? watch?]
   (binding [lc/*skip-auto-compile* true]
     (lc/eval-in-project
       (-> project add-cst-dep (cp-add-test-dir test?))
@@ -68,17 +70,16 @@
     '(require 'cljs.repl 'cljs.repl.rhino)))
 
 (def default-opts
-  '{:src-dir "cljs"
+  '{:src-dir "src"
     :test-dir "test"
+    :build-defaults {:externs []
+                     :libs [] 
+                     :foreign-libs []}
     :builds
     {:default {:output-to ".cst-out/default/main.js"
                :output-dir ".cst-out/default"
                :optimizations :whitespace
-               :pretty-print true
-               :src-dir nil
-               :externs nil
-               :libs nil
-               :foreign-libs nil}}
+               :pretty-print true}}
     :build :default
     :suites []
     :opts nil
@@ -92,31 +93,24 @@
     :port 9000
     :http 8000})
 
-(defn build-opts
-  [opts test?]
-  (let [bopts ((:build opts) (:builds opts))
-        src-dir (or (:src-dir bopts) (:src-dir opts))
-        test-dir (:test-dir opts)
-        main-dir (if test? test-dir src-dir)
-        bopts1 (assoc bopts
-                      :src-dir src-dir
-                      :test-dir test-dir
-                      :main-dir main-dir)]
-    (if-let [path (:output-to bopts1)]
+(defn build-conf
+  [{:keys [src-dir test-dir builds build-defaults]} build-kw test?]
+  (let [build (merge build-defaults (get builds build-kw))]
+    (if-let [path (:output-to build)]
       (if test?
-        (assoc bopts1
+        (assoc build
                :output-to (str (.getParent (File. path))
                                "/test.js"))
-        bopts1)
-      (assoc bopts1
+        build)
+      (assoc build
              :output-to (str
                           (File.
-                            (:output-dir bopts1)
+                            (:output-dir build)
                             (if test? "/test.js" "/main.js")))))))
 
-(defn test-opts
-  [opts]
-  ((:runner opts) (:runners opts)))
+(defn runner-conf
+  [cst-opts runner-kw]
+  (get (:runners cst-opts) runner-kw))
 
 (defn cst
   "Tools for clojurescript projects. Default action is to compile.
@@ -183,25 +177,51 @@ browser repl and server
 
   lein trampoline cst sbrepl :http 8080 :server :test"
   [project & args]
-  (let [outputfile (str (or (:name project) (:group project)) ".js")
-        [args opts] (split-with #(not= \: (first %)) args)
-        opts- (apply merge
-                     default-opts
-                     (:cst project)
-                     (read-string (str "{" (string/join " " opts) "}")))
+  (let [[args opts-str] (split-with #(not= \: (first %)) args)
         arg-set (set args)
+        cmd-opts (assoc
+                   (read-string (str "{" (string/join " " opts-str) "}"))
+                   :verbosity (cond
+                                (arg-set "-vv") 2
+                                (some arg-set #{"-v" "watch"}) 1
+                                :else 0))
+        proj-opts (apply merge default-opts (:cst project) cmd-opts)
         test? (arg-set "test")
         watch? (arg-set "watch")
-        bopts (build-opts opts- test?)
-        topts (test-opts opts-)
-        servr ((:server opts-) (:servers opts-))
-        opts (assoc opts- :build bopts :runner topts :server servr)
+        vprintln #(when (<= %1 (:verbosity proj-opts))
+                    (apply println %&))
+        runner-kw (:runner proj-opts)
+        runner (when test? (runner-conf proj-opts runner-kw))
+        build-kw (or (:build cmd-opts)
+                     (:build runner)
+                     (:build proj-opts))
+        build (build-conf proj-opts build-kw test?)
+        server-kw (:server proj-opts)
+        server (get (:servers proj-opts) server-kw)
+        opts (dissoc
+               (assoc proj-opts
+                      :build build
+                      :runner runner
+                      :server server)
+               :builds :runners :servers)
         starttime (.getTime (Date.))]
+    (vprintln 1 "Using")
+    (vprintln 1 "    :build " build-kw)
+    (vprintln 1 "    :runner" runner-kw)
+    (vprintln 1 "    :server" server-kw)
+    (vprintln 1)
+    (vprintln 2 "Config")
+    (vprintln
+      2
+      (string/replace
+        (with-out-str (pp/pprint opts))
+        #"^|\n"
+        "$0    "))
     (when (some #{"clean" "fresh"} args)
-      (println (str "Removing '" (:output-dir bopts)
-                  "' and '" (:output-to bopts) "'.."))
-      (fs/delete (:output-to bopts))
-      (fs/delete-dir (:output-dir bopts)))
+      (println (str "Removing '" (:output-dir build)
+                    "' and '" (:output-to build) "'.."))
+      (fs/delete (:output-to build))
+      (fs/delete-dir (:output-dir build)))
     (when-not (some #{"clean"} args)
       (cond
         (some #{"repl"} args)
@@ -214,7 +234,7 @@ browser repl and server
         (run-sbrepl project opts)
 
         :else
-        (let [ret (build project opts test? watch?)]
+        (let [ret (build-src project opts test? watch?)]
           (when-let [[x y] (and (:optimizations opts)
                                 (:wrap-output opts))]
             (spit (:output-to opts)
