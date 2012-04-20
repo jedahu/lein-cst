@@ -64,7 +64,7 @@
   [project opts]
   (lc/eval-in-project
     (cp-add-test-dir project true)
-    '(cljs.repl/repl (assoc (cljs.repl.rhino/repl-env)
+    `(cljs.repl/repl (assoc (cljs.repl.rhino/repl-env)
                             :working-dir ~(:repl-dir opts)))
     nil nil
     '(require 'cljs.repl 'cljs.repl.rhino)))
