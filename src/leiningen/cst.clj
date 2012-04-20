@@ -217,15 +217,17 @@ browser repl and server
                     "' and '" (:output-to build) "'.."))
       (fs/delete (:output-to build))
       (fs/delete-dir (:output-dir build)))
-    (when-not (some #{"clean"} args)
+    (when-not (arg-set "clean")
+      (when (some arg-set #{"repl" "brepl" "sbrepl"})
+        (fs/delete-dir (:repl-dir opts)))
       (cond
-        (some #{"repl"} args)
+        (arg-set "repl")
         (run-repl project opts)
 
-        (some #{"brepl"} args)
+        (arg-set "brepl")
         (run-brepl project opts)
 
-        (some #{"sbrepl"} args)
+        (arg-set "sbrepl")
         (run-sbrepl project opts)
 
         :else
