@@ -88,7 +88,7 @@
                :proc :rhino}}
     :runner :default
     :servers
-    {:default cst.server/serve-cljs}
+    {:default cst.server/serve-brepl}
     :server :default
     :port 9000
     :http 8000})
