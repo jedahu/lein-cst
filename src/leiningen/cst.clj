@@ -111,6 +111,13 @@
     :port 9000
     :http 8000})
 
+(defn merge-cst-maps
+  [& maps]
+  (assoc (apply merge maps)
+         :builds (apply merge (map :builds maps))
+         :runners (apply merge (map :runners maps))
+         :servers (apply merge (map :servers maps))))
+
 (defn build-conf
   [{:keys [src-dir test-dir builds build-defaults]} build-kw test?]
   (let [build (merge build-defaults (get builds build-kw))]
@@ -198,7 +205,7 @@ browser repl and server
                                 (arg-set "-vv") 2
                                 (some arg-set #{"-v" "watch"}) 1
                                 :else 0))
-        proj-opts (apply merge default-opts (:cst project) cmd-opts)
+        proj-opts (merge-cst-maps default-opts (:cst project) cmd-opts)
         test? (arg-set "test")
         watch? (arg-set "watch")
         vprintln #(when (<= %1 (:verbosity proj-opts))
