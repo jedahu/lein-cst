@@ -1,4 +1,6 @@
 (ns cst.build
+  (:use
+    cst.output)
   (:require
     [cljs.closure :as cc]
     [clj-stacktrace.repl :as st]
@@ -8,15 +10,8 @@
     [watcher :as w]
     [clojure.java.io :as io]))
 
-(def ^:dynamic *verbosity* 0)
-
-(defn vprintln
-  [n & args]
-  (when (<= n *verbosity*)
-    (apply println args)))
-
 (defn run-tests
-  [{:keys [build runner] :as opts}]
+  [{{:keys [build runner] :as cst} :cst :as project}]
   (vprintln 1 "Testing..")
   (let [proc (:proc runner)]
     (cond
@@ -31,7 +26,7 @@
       (symbol? proc)
       (do
         (vprintln 2 (str "    " proc))
-        (let [res ((resolve proc) opts)]
+        (let [res ((resolve proc) project)]
           (if (integer? res) res 1))) 
 
       (= :rhino proc)
@@ -58,10 +53,10 @@
               1)))))))
 
 (defn write-test-file
-  [{:keys [build runner] :as opts}]
+  [{:keys [build runner] :as cst}]
   (let [cljs-fn (:cljs runner)
-        suites (:suites opts)
-        runner-opts (:opts opts)]
+        suites (:suites cst)
+        runner-opts (:opts cst)]
     (spit
       ".cst-test.cljs"
       (pr-str
@@ -74,26 +69,26 @@
 
 
 (defn run-build
-  [{:keys [build runner] :as opts}]
+  [{:keys [build runner] :as cst}]
   (when runner
-    (write-test-file opts))
+    (write-test-file cst))
   (if runner
     (cc/build ".cst-test.cljs" build)
-    (cc/build (:src-dir opts) build)))
+    (cc/build (:src-dir cst) build)))
 
 (defn build-once
-  [opts]
+  [{:keys [cst] :as project}]
   (try
-    (run-build opts)
-    (System/exit (if (:runner opts) (run-tests opts) 0))
+    (run-build cst)
+    (System/exit (if (:runner cst) (run-tests project) 0))
     (catch Throwable e
       (st/pst+ e)
       (System/exit 1))))
 
 (defn build-loop
-  [{:keys [build runner] :as opts}]
+  [{{:keys [build runner] :as cst} :cst :as project}]
   (let [events? (atom true)
-        dirs [(:src-dir opts) (:test-dir opts)]]
+        dirs [(:src-dir cst) (:test-dir cst)]]
     (future
       (w/with-watch-paths dirs
         (fn [ignored] (reset! events? true))
@@ -103,8 +98,8 @@
         (do
           (vprintln 1 "Compiling..")
           (try
-            (run-build opts)
-            (when runner (run-tests opts))
+            (run-build cst)
+            (when runner (run-tests project))
             (catch Throwable e
               (st/pst+ e)))
           (vprintln 1 "Watching..")
@@ -113,12 +108,12 @@
         (Thread/sleep 100)))))
 
 (defn build-cljs
-  [opts test? watch?]
-  (binding [*verbosity* (:verbosity opts)]
+  [project test? watch?]
+  (binding [*verbosity* (-> project :cst :verbosity)]
     (vprintln 1 "Compiling..")
-    (vprintln 1 "    :output-dir" (:output-dir (:build opts)))
-    (vprintln 1 "    :output-to " (:output-to (:build opts)))
+    (vprintln 1 "    :output-dir" (-> project :cst :build :output-dir))
+    (vprintln 1 "    :output-to " (-> project :cst :build :output-to))
     (vprintln 1) 
     (if watch?
-      (build-loop opts)
-      (build-once opts))))
+      (build-loop project)
+      (build-once project))))

@@ -29,9 +29,8 @@
       [browser (.getAbsolutePath tmp-html)])))
 
 (defn start-sbrepl
-  [opts]
-  (build-browser-js opts)
-  (let [jetty ((resolve (:server opts)) opts)]
-    (start-brepl opts)
-    (.stop jetty)
-    (System/exit 0)))
+  [{:keys [cst] :as project}]
+  (build-browser-js cst)
+  (future ((resolve (:server cst)) project))
+  (start-brepl cst)
+  (System/exit 0))

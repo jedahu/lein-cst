@@ -9,7 +9,8 @@
    [clj-stacktrace "0.2.4"]
    [fs "1.1.2"]
    [conch "0.2.0"]
-   [ring/ring-jetty-adapter "1.1.0-RC1"]]
+   [ring/ring-jetty-adapter "1.1.0-RC1"]
+   [ring/ring-devel "1.1.0-RC1"]]
   
   :exclusions
   [org.apache.ant/ant])

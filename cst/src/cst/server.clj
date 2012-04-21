@@ -1,6 +1,8 @@
 (ns cst.server
   (:use
-    [ring.adapter.jetty :only (run-jetty)])
+    cst.output
+    [ring.adapter.jetty :only (run-jetty)]
+    [ring.middleware.reload :only (wrap-reload)])
   (:import
     [java.io File]))
 
@@ -14,28 +16,35 @@
          (when multiple? "<script>goog.require('cst.build.test.ns');</script>")
          "</body></html>")))
 
-(defn serve-cljs*
-  [proj-opts & {:keys [test-uri handler body] :or {test-uri "/"}}]
-  (println "    running jetty")
-  (println (str "    test url: http://localhost:" (:http proj-opts) test-uri))
+(defn- serve-cljs-
+  [{:keys [cst] :as proj-opts} & {:keys [test-uri handler body] :or {test-uri "/"}}]
+  (vprintln 1 "    running jetty")
+  (vprintln 1 (str "    test url: http://localhost:" (:http cst) test-uri))
   (run-jetty
-    (fn [req]
-      (cond
-        (= test-uri (:uri req))
-        {:status 200
-         :headers {"Content-Type" "text/html"}
-         :body (or body (test-body (:build proj-opts)))}
+    (->
+      (fn [req]
+        (cond
+          (= test-uri (:uri req))
+          {:status 200
+           :headers {"Content-Type" "text/html"}
+           :body (or body (test-body (:build cst)))}
 
-        (.exists (File. (str "." (:uri req))))
-        {:status 200
-         :body (slurp (str "." (:uri req)))}
+          (.exists (File. (str "." (:uri req))))
+          {:status 200
+           :body (slurp (str "." (:uri req)))}
 
-        handler
-        (handler req)
+          handler
+          (handler req)
 
-        :else
-        {:status 404}))
-    {:port (:http proj-opts) :join? false}))
+          :else
+          {:status 404}))
+      (wrap-reload :dirs [(:source-path proj-opts) (:test-path proj-opts)])) 
+    {:port (:http cst) :join? false}))
+
+(defn serve-cljs*
+  [project & opts]
+  (binding [*verbosity* (or (-> project :cst :verbosity) 0)]
+    (apply serve-cljs- project opts))) 
 
 (def serve-cljs (memoize serve-cljs*))
 
@@ -50,7 +59,7 @@
   [proj-opts & opts]
   (apply serve-cljs*
          proj-opts
-         :body (repl-body (:repl-dir proj-opts))
+         :body (repl-body (:repl-dir (:cst proj-opts)))
          opts))
 
 (def serve-brepl (memoize serve-brepl*))

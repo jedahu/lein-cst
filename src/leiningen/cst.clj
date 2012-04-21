@@ -29,43 +29,43 @@
 
 (def getName (memfn getName))
 
-(defn- build-src [project opts test? watch?]
+(defn- build-src [project test? watch?]
   (binding [lc/*skip-auto-compile* true]
     (lc/eval-in-project
       (-> project add-cst-dep (cp-add-test-dir test?))
-      `(cst.build/build-cljs '~opts ~test? ~watch?)
+      `(cst.build/build-cljs '~project ~test? ~watch?)
       nil
       nil
       (list* 'require ''cst.build
-            (when-let [p (and test? (:proc (:runner opts)))]
+            (when-let [p (and test? (-> project :cst :runner :proc))]
               (when (symbol? p)
                 [`(quote ~(symbol (namespace p)))]))))))
 
 (defn- run-sbrepl
-  [project opts]
+  [project]
   (lc/eval-in-project
     (-> project add-cst-dep (cp-add-test-dir true))
-    `(cst.sbrepl/start-sbrepl '~opts)
+    `(cst.sbrepl/start-sbrepl '~project)
     nil nil
-    `(require 'cst.sbrepl (quote ~(symbol (namespace (:server opts)))))))
+    `(require 'cst.sbrepl (quote ~(symbol (namespace (-> project :cst :server)))))))
 
 (defn- run-brepl
-  [project opts]
+  [project]
   (lc/eval-in-project
     (cp-add-test-dir project true)
     `(cljs.repl/repl
        (cljs.repl.browser/repl-env
-         :port ~(:port opts)
-         :working-dir ~(:repl-dir opts)))
+         :port ~(:port (:cst project))
+         :working-dir ~(:repl-dir (:cst project))))
     nil nil
     '(require 'cljs.repl 'cljs.repl.browser)))
 
 (defn- run-repl
-  [project opts]
+  [project]
   (lc/eval-in-project
     (cp-add-test-dir project true)
     `(cljs.repl/repl (assoc (cljs.repl.rhino/repl-env)
-                            :working-dir ~(:repl-dir opts)))
+                            :working-dir ~(-> project :cst :repl-dir)))
     nil nil
     '(require 'cljs.repl 'cljs.repl.rhino)))
 
@@ -200,6 +200,7 @@ browser repl and server
                       :runner runner
                       :server server)
                :builds :runners :servers)
+        project* (assoc project :cst opts)
         starttime (.getTime (Date.))]
     (vprintln 1 "Using")
     (vprintln 1 "    :build " build-kw)
@@ -224,16 +225,16 @@ browser repl and server
         (fs/delete-dir (:repl-dir opts)))
       (cond
         (arg-set "repl")
-        (run-repl project opts)
+        (run-repl project*)
 
         (arg-set "brepl")
-        (run-brepl project opts)
+        (run-brepl project*)
 
         (arg-set "sbrepl")
-        (run-sbrepl project opts)
+        (run-sbrepl project*)
 
         :else
-        (let [ret (build-src project opts test? watch?)]
+        (let [ret (build-src project* test? watch?)]
           (when-let [[x y] (and (:optimizations opts)
                                 (:wrap-output opts))]
             (spit (:output-to opts)
