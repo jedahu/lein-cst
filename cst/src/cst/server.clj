@@ -1,6 +1,6 @@
 (ns cst.server
-  (:require
-    [ring.adapter.jetty :as jetty])
+  (:use
+    [ring.adapter.jetty :only (run-jetty)])
   (:import
     [java.io File]))
 
@@ -18,7 +18,7 @@
   [proj-opts & {:keys [test-uri handler body] :or {test-uri "/"}}]
   (println "    running jetty")
   (println (str "    test url: http://localhost:" (:http proj-opts) test-uri))
-  (jetty/run-jetty
+  (run-jetty
     (fn [req]
       (cond
         (= test-uri (:uri req))
