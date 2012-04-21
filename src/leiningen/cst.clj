@@ -97,7 +97,8 @@
     :opts nil
     :runners
     {:console-rhino {:cljs menodora.runner.console/run-suites-rhino
-                     :proc :rhino}
+                     :proc :rhino
+                     :build :single}
      :console-v8 {:cljs menodora.runner.console/run-suites-v8
                   :proc ["d8"]
                   :build :single}
