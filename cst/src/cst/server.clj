@@ -1,4 +1,4 @@
-(ns cst.server 
+(ns cst.server
   (:require
     [ring.adapter.jetty :as jetty])
   (:import
@@ -32,7 +32,7 @@
 
         handler
         (handler req)
-        
+
         :else
         {:status 404}))
     {:port (:http proj-opts) :join? false}))
