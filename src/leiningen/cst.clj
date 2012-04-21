@@ -90,6 +90,7 @@
     :servers
     {:default cst.server/serve-brepl}
     :server :default
+    :repl-dir ".cst-repl"
     :port 9000
     :http 8000})
 
