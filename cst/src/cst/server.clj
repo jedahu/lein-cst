@@ -6,12 +6,13 @@
 
 (defn test-body
   [{:keys  [output-dir output-to]}]
-  (str "<html><head><meta charset='UTF-8'/></head></body>"
-       (when (.exists (File. (str output-dir "/goog/base.js")))
-         "<script src='"
-         (str output-dir "/goog/base.js")
-         "'></script>")
-       "<script src='/" output-to "'></script>"))
+  (let [base (str output-dir "/goog/base.js")
+        multiple? (.exists (File. base))]
+    (str "<html><head><meta charset='UTF-8'/></head><body>"
+         (when multiple? (str "<script src='/" base "'></script>"))
+         "<script src='/" output-to "'></script>"
+         (when multiple? "<script>goog.require('cst.build.test.ns');</script>")
+         "</body></html>")))
 
 (defn serve-cljs*
   [proj-opts & {:keys [test-uri handler body] :or {test-uri "/"}}]
