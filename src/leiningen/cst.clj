@@ -76,17 +76,34 @@
                      :libs [] 
                      :foreign-libs []}
     :builds
-    {:default {:output-to ".cst-out/default/main.js"
-               :output-dir ".cst-out/default"
-               :optimizations :whitespace
-               :pretty-print true}}
-    :build :default
+    {:dev {:output-dir ".cst-out/dev"
+           :optimizations nil
+           :pretty-print true}
+     :single {:output-dir ".cst-out/single"
+              :optimizations :whitespace
+              :pretty-print true}
+     :small {:output-dir ".cst-out/small"
+             :optimizations :simple
+             :pretty-print true}
+     :tiny {:output-dir ".cst-out/tiny"
+            :optimizations :advanced
+            :pretty-print false}
+     :deploy {:output-dir ".cst-out/deploy"
+              :output-to "main.js"
+              :optimizations :advanced
+              :pretty-print false}}
+    :build :dev
     :suites []
     :opts nil
     :runners
-    {:default {:cljs menodora.runner.console/run-suites-rhino
-               :proc :rhino}}
-    :runner :default
+    {:console-rhino {:cljs menodora.runner.console/run-suites-rhino
+                     :proc :rhino}
+     :console-v8 {:cljs menodora.runner.console/run-suites-v8
+                  :proc ["d8"]
+                  :build :single}
+     :console-browser {:cljs menodora.runner.console/run-suites-browser
+                       :proc cst.server/serve-cljs}}
+    :runner :console-rhino
     :servers
     {:default cst.server/serve-brepl}
     :server :default
