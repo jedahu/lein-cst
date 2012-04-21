@@ -229,7 +229,7 @@ browser repl and server
                       :build build
                       :runner runner
                       :server server)
-               :builds :runners :servers)
+               :build-defaults :builds :runners :servers)
         project* (assoc project :cst opts)
         starttime (.getTime (Date.))]
     (vprintln 1 "Using")
