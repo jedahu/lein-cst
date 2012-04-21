@@ -211,13 +211,19 @@ browser repl and server
         vprintln #(when (<= %1 (:verbosity proj-opts))
                     (apply println %&))
         runner-kw (:runner proj-opts)
-        runner (when test? (runner-conf proj-opts runner-kw))
+        runner (cond
+                 (not (keyword? runner-kw)) runner-kw
+                 test? (runner-conf proj-opts runner-kw))
         build-kw (or (:build cmd-opts)
                      (:build runner)
                      (:build proj-opts))
-        build (build-conf proj-opts build-kw test?)
+        build (if (keyword? build-kw)
+                (build-conf proj-opts build-kw test?)
+                build-kw)
         server-kw (:server proj-opts)
-        server (get (:servers proj-opts) server-kw)
+        server (if (keyword? server-kw)
+                 (get (:servers proj-opts) server-kw)
+                 server-kw)
         opts (dissoc
                (assoc proj-opts
                       :build build
