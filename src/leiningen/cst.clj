@@ -103,7 +103,10 @@
                   :proc ["d8"]
                   :build :single}
      :console-browser {:cljs menodora.runner.console/run-suites-browser
-                       :proc cst.server/serve-cljs}}
+                       :proc cst.server/serve-cljs}
+     :console-phantom {:cljs menodora.runner.console/run-suites-browser
+                       :proc cst.server/serve-cljs
+                       :browser :phantom}}
     :runner :console-rhino
     :servers
     {:default cst.server/serve-brepl}

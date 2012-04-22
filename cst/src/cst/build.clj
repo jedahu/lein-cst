@@ -10,7 +10,7 @@
     [watcher :as w]
     [clojure.java.io :as io]))
 
-(defn run-tests
+(defn run-tests-
   [{{:keys [build runner] :as cst} :cst :as project}]
   (vprintln 1 "Testing..")
   (let [proc (:proc runner)]
@@ -27,7 +27,7 @@
       (do
         (vprintln 2 (str "    " proc))
         (let [res ((resolve proc) project)]
-          (if (integer? res) res 1))) 
+          (if (integer? res) res 1)))
 
       (= :rhino proc)
       (let [env (rhino/repl-env)
@@ -51,6 +51,19 @@
               (println (:value res))
               (println (:stacktrace res))
               1)))))))
+
+(defn run-tests
+  [{{:keys [runner] :as cst} :cst :as project}]
+  (run-tests- project)
+  (when-let [browser (:browser runner)]
+    (cond
+      (= :phantom browser)
+      (do
+        (spit ".cst-phantom-test.js" (io/resource "phantom-test.js"))
+        (let [p (conch/proc "phantomjs" ".cst-phantom-test.js" (str "http://localhost:" (:http cst) "/"))]
+          (future (conch/stream-to-out p :out))
+          (future (conch/stream-to-out p :err))
+          (conch/exit-code p))))))
 
 (defn write-test-file
   [{:keys [build runner] :as cst}]
