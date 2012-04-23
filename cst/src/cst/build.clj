@@ -60,7 +60,7 @@
     (cond
       (= :phantom browser)
       (do
-        (spit ".cst-phantom-test.js" (io/resource "phantom-test.js"))
+        (spit ".cst-phantom-test.js" (slurp (io/resource "phantom-test.js")))
         (let [p (conch/proc "phantomjs" ".cst-phantom-test.js" (str "http://localhost:" (:http cst) "/"))]
           (future (conch/stream-to-out p :out))
           (future (conch/stream-to-out p :err))
