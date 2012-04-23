@@ -1,5 +1,5 @@
 (defproject
-  cst "0.2.2-SNAPSHOT"
+  cst "0.2.2"
   :description "clojurescript tools"
 
   :dependencies
