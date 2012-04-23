@@ -14,6 +14,7 @@ page.onError = function(msg, trace) {
   trace.forEach(function(item) {
     console.log('   ', item.file, ':', item.line);
   });
+  phantom.exit(1);
 };
 
 page.open(url, function(status) {
