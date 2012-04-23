@@ -253,7 +253,7 @@ browser repl and server
       (vprintln 1 "Cleaning..")
       (vprintln 2 (str "Removing '" (:output-dir build)
                        "' and '" (:output-to build) "'.."))
-      (vprintln 1)
+      (vprintln 2)
       (fs/delete (:output-to build))
       (fs/delete-dir (:output-dir build)))
     (when-not (arg-set "clean")

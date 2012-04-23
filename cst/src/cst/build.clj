@@ -51,7 +51,8 @@
               (println "Unhandled JS exception:")
               (println (:value res))
               (println (:stacktrace res))
-              1)))))))
+              1))))))
+  (vprintln 2))
 
 (defn run-tests
   [{{:keys [runner] :as cst} :cst :as project}]
@@ -88,9 +89,13 @@
     (vprintln 1 "Cleaning..")
     (vprintln 2 (str "removing '" (:output-dir build)
                      "' and '" (:output-to build) "'"))
-    (vprintln 1)
+    (vprintln 2)
     (fs/delete (:output-to build))
     (fs/delete (:output-dir build)))
+  (vprintln 1 "Compiling..")
+  (vprintln 2 "    :output-dir" (:output-dir build))
+  (vprintln 2 "    :output-to " (:output-to build))
+  (vprintln 2)
   (when runner
     (write-test-file cst))
   (if runner
@@ -117,7 +122,6 @@
     (while true
       (if @events?
         (do
-          (vprintln 1 "Compiling..")
           (try
             (run-build cst fresh?)
             (when runner (run-tests project))
@@ -131,10 +135,6 @@
 (defn build-cljs
   [project test? watch? fresh?]
   (binding [*verbosity* (-> project :cst :verbosity)]
-    (vprintln 1 "Compiling..")
-    (vprintln 1 "    :output-dir" (-> project :cst :build :output-dir))
-    (vprintln 1 "    :output-to " (-> project :cst :build :output-to))
-    (vprintln 1) 
     (if watch?
       (build-loop project fresh?)
       (build-once project fresh?))))
