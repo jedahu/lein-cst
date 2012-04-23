@@ -13,7 +13,7 @@
   [project]
   (if (some #(= 'cst (first %)) (:dependencies project))
     project
-    (update-in project [:dependencies] conj ['cst "0.2.3-SNAPSHOT"])))
+    (update-in project [:dependencies] conj ['cst "0.2.3"])))
 
 (defn cp-add-test-dir
   [project test?]
