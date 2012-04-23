@@ -29,11 +29,11 @@
 
 (def getName (memfn getName))
 
-(defn- build-src [project test? watch?]
+(defn- build-src [project test? watch? fresh?]
   (binding [lc/*skip-auto-compile* true]
     (lc/eval-in-project
       (-> project add-cst-dep (cp-add-test-dir test?))
-      `(cst.build/build-cljs '~project ~test? ~watch?)
+      `(cst.build/build-cljs '~project ~test? ~watch? ~fresh?)
       nil
       nil
       (list* 'require ''cst.build
@@ -144,8 +144,8 @@ Command line arguments:
 watch  monitor sources and recompile when they change.
 test   compile with test namespaces and run tests after each compile using
        rhino or an external command.
-fresh  remove output files before doing anything else.
-clean  remove output files and do nothing else (ignores other args).
+fresh  remove output files before every compile. 
+clean  remove output files before the first compile only.
 repl   run a clojurescript repl using rhino
 brepl  run a clojurescript repl listener
 sbrepl run a clojurescript repl listener and a http server
@@ -212,6 +212,7 @@ browser repl and server
         proj-opts (merge-cst-maps default-opts (:cst project) cmd-opts)
         test? (arg-set "test")
         watch? (arg-set "watch")
+        fresh? (arg-set "fresh")
         vprintln #(when (<= %1 (:verbosity proj-opts))
                     (apply println %&))
         runner-kw (:runner proj-opts)
@@ -248,10 +249,11 @@ browser repl and server
         (with-out-str (pp/pprint opts))
         #"^|\n"
         "$0    "))
-    (when (some #{"clean" "fresh"} args)
-      (println (str "Removing '" (:output-dir build)
-                    "' and '" (:output-to build) "'.."))
-      (println)
+    (when (arg-set "clean")
+      (vprintln 1 "Cleaning..")
+      (vprintln 2 (str "Removing '" (:output-dir build)
+                       "' and '" (:output-to build) "'.."))
+      (vprintln 1)
       (fs/delete (:output-to build))
       (fs/delete-dir (:output-dir build)))
     (when-not (arg-set "clean")
@@ -268,7 +270,7 @@ browser repl and server
         (run-sbrepl project*)
 
         :else
-        (let [ret (build-src project* test? watch?)]
+        (let [ret (build-src project* test? watch? fresh?)]
           (when-let [[x y] (and (:optimizations opts)
                                 (:wrap-output opts))]
             (spit (:output-to opts)

@@ -8,7 +8,8 @@
     [cljs.repl.rhino :as rhino]
     [clojure.string :as string]
     [watcher :as w]
-    [clojure.java.io :as io]))
+    [clojure.java.io :as io]
+    [fs.core :as fs]))
 
 (defn run-tests-
   [{{:keys [build runner] :as cst} :cst :as project}]
@@ -82,7 +83,14 @@
 
 
 (defn run-build
-  [{:keys [build runner] :as cst}]
+  [{:keys [build runner] :as cst} fresh?]
+  (when fresh?
+    (vprintln 1 "Cleaning..")
+    (vprintln 2 (str "removing '" (:output-dir build)
+                     "' and '" (:output-to build) "'"))
+    (vprintln 1)
+    (fs/delete (:output-to build))
+    (fs/delete (:output-dir build)))
   (when runner
     (write-test-file cst))
   (if runner
@@ -90,16 +98,16 @@
     (cc/build (:src-dir cst) build)))
 
 (defn build-once
-  [{:keys [cst] :as project}]
+  [{:keys [cst] :as project} fresh?]
   (try
-    (run-build cst)
+    (run-build cst fresh?)
     (System/exit (if (:runner cst) (run-tests project) 0))
     (catch Throwable e
       (st/pst+ e)
       (System/exit 1))))
 
 (defn build-loop
-  [{{:keys [build runner] :as cst} :cst :as project}]
+  [{{:keys [build runner] :as cst} :cst :as project} fresh?]
   (let [events? (atom true)
         dirs [(:src-dir cst) (:test-dir cst)]]
     (future
@@ -111,7 +119,7 @@
         (do
           (vprintln 1 "Compiling..")
           (try
-            (run-build cst)
+            (run-build cst fresh?)
             (when runner (run-tests project))
             (catch Throwable e
               (st/pst+ e)))
@@ -121,12 +129,12 @@
         (Thread/sleep 100)))))
 
 (defn build-cljs
-  [project test? watch?]
+  [project test? watch? fresh?]
   (binding [*verbosity* (-> project :cst :verbosity)]
     (vprintln 1 "Compiling..")
     (vprintln 1 "    :output-dir" (-> project :cst :build :output-dir))
     (vprintln 1 "    :output-to " (-> project :cst :build :output-to))
     (vprintln 1) 
     (if watch?
-      (build-loop project)
-      (build-once project))))
+      (build-loop project fresh?)
+      (build-once project fresh?))))
