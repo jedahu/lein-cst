@@ -2,7 +2,8 @@
   (:use
     cst.output
     [ring.adapter.jetty :only (run-jetty)]
-    [ring.middleware.reload :only (wrap-reload)])
+    [ring.middleware.reload :only (wrap-reload)]
+    [ring.middleware.content-type :only (wrap-content-type)])
   (:import
     [java.io File]))
 
@@ -38,7 +39,9 @@
 
           :else
           {:status 404}))
-      (wrap-reload :dirs [(:source-path proj-opts) (:test-path proj-opts)])) 
+      wrap-content-type
+      (wrap-reload :dirs [(:source-path proj-opts)
+                          (:test-path proj-opts)]))
     {:port (:http cst) :join? false}))
 
 (defn serve-cljs*
