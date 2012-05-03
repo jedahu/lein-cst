@@ -20,14 +20,14 @@
 
 (defn- serve-cljs-
   [{:keys [cst] :as proj-opts} &
-   {:keys [test-uri handler html-fn] :or {test-uri "/"} :as opts}]
+   {:keys [uri-regex handler html-fn] :or {uri-regex #"^/$"} :as opts}]
   (vprintln 1 "    running jetty")
-  (vprintln 1 (str "    test url: http://localhost:" (:http cst) test-uri))
+  (vprintln 1 (str "    test url: http://localhost:" (:http cst) uri-regex)
   (run-jetty
     (->
       (fn [req]
         (cond
-          (= test-uri (:uri req))
+          (re-seq uri-regex (:uri req))
           {:status 200
            :headers {"Content-Type" "text/html"}
            :body ((or html-fn test-body) (:build cst) opts)}
