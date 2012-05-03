@@ -2,12 +2,25 @@
   (:require
     [clojure.string :as string]
     [clojure.java.io :as io]
-    [leiningen.compile :as lc]
     [fs.core :as fs]
     [clojure.pprint :as pp])
   (:import
     [java.util Date]
     [java.io File]))
+
+(defn eval-in-project
+  "Support eval-in-project in both Leiningen 1.x and 2.x."
+  [project form init]
+  (let [[eip two?] (or (try (require 'leiningen.core.eval)
+                         [(resolve 'leiningen.core.eval/eval-in-project)
+                          true]
+                         (catch java.io.FileNotFoundException _))
+                       (try (require 'leiningen.compile)
+                         [(resolve 'leiningen.compile/eval-in-project)]
+                         (catch java.io.FileNotFoundException _)))]
+    (if two?
+      (eip project form init)
+      (eip project form nil nil init))))
 
 (defn add-cst-dep
   [project]
@@ -30,43 +43,37 @@
 (def getName (memfn getName))
 
 (defn- build-src [project test? watch? fresh?]
-  (binding [lc/*skip-auto-compile* true]
-    (lc/eval-in-project
-      (-> project add-cst-dep (cp-add-test-dir test?))
-      `(cst.build/build-cljs '~project ~test? ~watch? ~fresh?)
-      nil
-      nil
-      (list* 'require ''cst.build
-            (when-let [p (and test? (-> project :cst :runner :proc))]
-              (when (symbol? p)
-                [`(quote ~(symbol (namespace p)))]))))))
+  (eval-in-project
+    (-> project add-cst-dep (cp-add-test-dir test?))
+    `(cst.build/build-cljs '~project ~test? ~watch? ~fresh?)
+    (list* 'require ''cst.build
+           (when-let [p (and test? (-> project :cst :runner :proc))]
+             (when (symbol? p)
+               [`(quote ~(symbol (namespace p)))])))))
 
 (defn- run-sbrepl
   [project]
-  (lc/eval-in-project
+  (eval-in-project
     (-> project add-cst-dep (cp-add-test-dir true))
     `(cst.sbrepl/start-sbrepl '~project)
-    nil nil
     `(require 'cst.sbrepl (quote ~(symbol (namespace (-> project :cst :server)))))))
 
 (defn- run-brepl
   [project]
-  (lc/eval-in-project
+  (eval-in-project
     (cp-add-test-dir project true)
     `(cljs.repl/repl
        (cljs.repl.browser/repl-env
          :port ~(:port (:cst project))
          :working-dir ~(:repl-dir (:cst project))))
-    nil nil
     '(require 'cljs.repl 'cljs.repl.browser)))
 
 (defn- run-repl
   [project]
-  (lc/eval-in-project
+  (eval-in-project
     (cp-add-test-dir project true)
     `(cljs.repl/repl (assoc (cljs.repl.rhino/repl-env)
                             :working-dir ~(-> project :cst :repl-dir)))
-    nil nil
     '(require 'cljs.repl 'cljs.repl.rhino)))
 
 (def default-opts
