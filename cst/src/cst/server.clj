@@ -8,65 +8,77 @@
     [java.io File]))
 
 (defn test-body
-  [{:keys  [output-dir output-to]} {:keys [head body]}]
-  (let [base (str output-dir "/goog/base.js")
+  [project {:keys [head body]}]
+  (let [base (str (-> project :cst :build :output-dir)
+                  "/goog/base.js")
         multiple? (.exists (File. base))]
     (str "<html><head><meta charset='UTF-8'/>" head
          (when multiple? (str "<script src='/" base "'></script>"))
          "</head><body>" body
-         "<script src='/" output-to "'></script>"
+         "<script src='/"
+         (-> project :cst :build :output-to)
+         "'></script>"
          (when multiple? "<script>goog.require('cst.build.test.ns');</script>")
          "</body></html>")))
 
+(defn cljs-handler
+  [project & [{:keys [uri-regex handler html-fn]
+               :or {uri-regex #"^/$"}
+               :as opts}]]
+  (vprintln 1 (str "    test url: http://localhost:"
+                   (-> project :cst :http)
+                   uri-regex))
+  (->
+    (fn [req]
+      (cond
+        (re-seq uri-regex (:uri req))
+        {:status 200
+         :headers {"Content-Type" "text/html"}
+         :body ((or html-fn test-body)
+                  project
+                  opts)}
+
+        (.exists (File. (str "." (:uri req))))
+        {:status 200
+         :body (slurp (str "." (:uri req)))}
+
+        handler
+        (handler req)
+
+        :else
+        {:status 404}))
+    wrap-content-type
+    (wrap-reload :dirs [(:source-path project)
+                        (:test-path project)])))
+
 (defn- serve-cljs-
-  [{:keys [cst] :as proj-opts} &
-   {:keys [uri-regex handler html-fn] :or {uri-regex #"^/$"} :as opts}]
+  [project & [opts]]
   (vprintln 1 "    running jetty")
-  (vprintln 1 (str "    test url: http://localhost:" (:http cst) uri-regex)
-  (run-jetty
-    (->
-      (fn [req]
-        (cond
-          (re-seq uri-regex (:uri req))
-          {:status 200
-           :headers {"Content-Type" "text/html"}
-           :body ((or html-fn test-body) (:build cst) opts)}
-
-          (.exists (File. (str "." (:uri req))))
-          {:status 200
-           :body (slurp (str "." (:uri req)))}
-
-          handler
-          (handler req)
-
-          :else
-          {:status 404}))
-      wrap-content-type
-      (wrap-reload :dirs [(:source-path proj-opts)
-                          (:test-path proj-opts)]))
-    {:port (:http cst) :join? false}))
+  (run-jetty (cljs-handler project opts)
+             {:port (-> project :cst :http)
+              :join? false}))
 
 (defn serve-cljs*
-  [project & opts]
+  [project & [opts]]
   (binding [*verbosity* (or (-> project :cst :verbosity) 0)]
-    (apply serve-cljs- project opts)))
+    (serve-cljs- project opts)))
 
 (def serve-cljs (memoize serve-cljs*))
 
 (defn repl-body
-  [{:keys [repl-dir]} {:keys [head body]}]
-  (str "<html><head><meta charset='UTF-8'/>" head
-       "<script src='/" repl-dir "/goog/base.js'></script>"
-       "<script src='/" repl-dir "/main.js'></script></head><body>"
-       body
-       "<script>goog.require('cst.repl.browser.ns');</script>"
-       "</body></html>"))
+  [project & [{:keys [head body]}]]
+  (let [repl-dir (-> project :cst :repl-dir)]
+    (str "<html><head><meta charset='UTF-8'/>" head
+         "<script src='/" repl-dir "/goog/base.js'></script>"
+         "<script src='/" repl-dir "/main.js'></script></head><body>"
+         body
+         "<script>goog.require('cst.repl.browser.ns');</script>"
+         "</body></html>")))
 
 (defn serve-brepl*
-  [proj-opts & opts]
-  (apply serve-cljs*
-         proj-opts
-         :body (repl-body (:cst proj-opts))
-         opts))
+  [project & [opts]]
+  (serve-cljs* project
+               (assoc opts
+                      :html-fn repl-body)))
 
 (def serve-brepl (memoize serve-brepl*))
