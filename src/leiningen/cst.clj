@@ -129,8 +129,7 @@
            :output-to (if test?
                         (str (File. (:output-dir build) "test.js"))
                         (or (:output-to build)
-                            (str (.getParent
-                                   (File. (:output-dir build) "main.js"))))))))
+                            (str (File. (:output-dir build) "main.js")))))))
 
 (defn runner-conf
   [cst-opts runner-kw]
