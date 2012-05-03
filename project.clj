@@ -1,5 +1,5 @@
 (defproject
-  lein-cst "0.2.6-SNAPSHOT"
+  lein-cst "0.3.0"
   :description "leiningen clojurescript tools"
 
   :dependencies
