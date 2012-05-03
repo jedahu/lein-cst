@@ -19,6 +19,7 @@
       (vector? proc)
       (let [cmd (conj proc (:output-to build))]
         (vprintln 2 (str "    `" (string/join " " cmd) "`"))
+        (vprintln 2)
         (let [p (apply conch/proc cmd)]
           (future (conch/stream-to-out p :out))
           (future (conch/stream-to-out p :err))
@@ -27,6 +28,7 @@
       (symbol? proc)
       (do
         (vprintln 2 (str "    " proc))
+        (vprintln 2)
         (let [res ((resolve proc) project)]
           (if (integer? res) res 1)))
 
@@ -51,21 +53,22 @@
               (println "Unhandled JS exception:")
               (println (:value res))
               (println (:stacktrace res))
-              1))))))
-  (vprintln 2))
+              (vprintln 2)
+              1)))))))
 
 (defn run-tests
   [{{:keys [runner] :as cst} :cst :as project}]
-  (run-tests- project)
-  (when-let [browser (:browser runner)]
-    (cond
-      (= :phantom browser)
-      (do
-        (spit ".cst-phantom-test.js" (slurp (io/resource "phantom-test.js")))
-        (let [p (conch/proc "phantomjs" ".cst-phantom-test.js" (str "http://localhost:" (:http cst) "/"))]
-          (future (conch/stream-to-out p :out))
-          (future (conch/stream-to-out p :err))
-          (conch/exit-code p))))))
+  (let [test-code (run-tests- project)]
+    (when-let [browser (:browser runner)]
+      (cond
+        (= :phantom browser)
+        (do
+          (spit ".cst-phantom-test.js" (slurp (io/resource "phantom-test.js")))
+          (let [p (conch/proc "phantomjs" ".cst-phantom-test.js" (str "http://localhost:" (:http cst) "/"))]
+            (future (conch/stream-to-out p :out))
+            (future (conch/stream-to-out p :err))
+            (conch/exit-code p)))))
+    test-code))
 
 (defn write-test-file
   [{:keys [build runner] :as cst}]
@@ -106,7 +109,17 @@
   [{:keys [cst] :as project} fresh?]
   (try
     (run-build cst fresh?)
-    (System/exit (if (:runner cst) (run-tests project) 0))
+    (System/exit
+      (if (:runner cst)
+        (let [code (run-tests project)]
+          (if (integer? code)
+            code
+            (do
+              (println (str "Error: tests did not return an integer ("
+                            (pr-str code)
+                            ")"))
+              1)))
+        0))
     (catch Throwable e
       (st/pst+ e)
       (System/exit 1))))
