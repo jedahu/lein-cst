@@ -1,10 +1,10 @@
 (defproject
-  cst "0.3.1-SNAPSHOT"
+  cst "0.3.1"
   :description "clojurescript tools"
 
   :dependencies
-  [[org.clojure/clojure "1.3.0"]
-   [org.clojure/clojurescript "0.0-1011"]
+  [[org.clojure/clojure "1.4.0"]
+   [org.clojure/clojurescript "0.0-1236"]
    [watcher "0.1.0"]
    [clj-stacktrace "0.2.4"]
    [fs "1.1.2"]

@@ -1,9 +1,9 @@
 (defproject
-  lein-cst "0.3.1-SNAPSHOT"
+  lein-cst "0.3.1"
   :description "leiningen clojurescript tools"
 
   :dependencies
-  [[org.clojure/clojure "1.3.0"]
+  [[org.clojure/clojure "1.4.0"]
    [fs "1.1.2"]]
 
   :plugins
